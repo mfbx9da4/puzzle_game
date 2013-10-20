@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>    
+<html>
+  <head>
+    <title>drawImage Text</title>
+    <!--[if IE]><script type="text/javascript" src="excanvas-modified.js"></script><![endif]--> 
+    <script type="text/javascript" src="utilities.js"></script>
+    <style type="text/css">
+      canvas { position:relative; outline: 1px solid #ccc; float: left; border:0px; padding: 0px; }
+      #canvases_conatiner {margin: 100px auto; width: 780px; border: 1px solid black;}
+      /*.row canvas {margin-left: -42px; margin-top: -42px;}*/
+    </style>
+    <script type="text/javascript">
+
+    /*********************************************************************************/
+    /* Globals                                                                         */
+    /*********************************************************************************/
+
+
+    var tiles = new Array();
+    var canvases = new Array(); 
+    var img = new Image(); img.src = "square.jpg";
+    var angles = [90, 180, 270, 0];
+    var iw = 200; // Image width
+    var ih = 200; // Image height
+    var s_iw = 100; // Scaled image width
+    var s_ih = 100; // Scaled image height
+    var ix = iw / 2; // Image center x position
+    var iy = ih / 2; // Image center y position
+    var cw = Math.ceil(Math.sqrt(2 * Math.pow(iw, 2))); // Canvas width
+    var ch = cw; // Canvas height
+
+    var cx = cw / 2; // Canvas center x
+    var cy = ch / 2; // Canvas center y
+
+    /*********************************************************************************/
+    /* Objects                                                                         */
+    /*********************************************************************************/
+    // < IE 9 indexOf fix
+    if (!Array.prototype.indexOf)
+    {
+      Array.prototype.indexOf = function(elt /*, from*/)
+      {
+        var len = this.length >>> 0;
+
+        var from = Number(arguments[1]) || 0;
+        from = (from < 0)
+             ? Math.ceil(from)
+             : Math.floor(from);
+        if (from < 0)
+          from += len;
+
+        for (; from < len; from++)
+        {
+          if (from in this &&
+              this[from] === elt)
+            return from;
+        }
+        return -1;
+      };
+    }
+
+    function Tile (canvas, sprite_start_x, sprite_start_y)
+    {
+        this.canvas = canvas;
+        this.angle = null;
+        this.sx = sprite_start_x;
+        this.sy = sprite_start_y;
+        this.rotate_cc = function ()
+        {
+            moveToTop(this.canvas);
+            var next_index = (angles.indexOf(this.angle) + 1) % angles.length;
+            this.rotate(angles[next_index]);
+        }
+
+        this.rotate = function (angle)
+        {
+            this.angle = angle;
+            var angle = (angle % 360) * Math.PI / 180;
+            var ctx = this.canvas.getContext("2d");
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            ctx.translate(-cx, -cy);
+            ctx.clearRect(0, 0, cw, ch);
+            ctx.drawImage(img, cx-ix, cy-iy, iw, ih);
+            // context.drawImage(img, sx, sy, swidth, sheight, x, y, width, height);
+            ctx.restore();
+            moveToTop(this.canvas)
+        }
+
+        this.setupCanvas = function ()
+        {
+            this.rotate(randChoice(angles));
+            addClickListener(this.canvas);
+            return canvas;
+        }
+    }
+
+    /*********************************************************************************/
+    /* Init game                                                                         */
+    /*********************************************************************************/
+
+    function initGame()
+    {
+        createCanvases(img, 5, 2);
+        styleCanvasesFlush();
+    }
+
+    function styleCanvasesFlush()
+    {
+        var margin = cw - iw;
+        for (var i = 0; i < canvases.length; i ++)
+        {
+            canvases[i].style.marginLeft = "-" + margin + "px";
+            canvases[i].style.marginTop = "-" + margin + "px";
+        }
+    }
+
+    function createRow()
+    {
+        var div = document.createElement('div');
+        div.className = 'row';
+        return div;
+    }
+
+    function createCanvas(id)
+    {
+        var canv = document.createElement('canvas');
+        canv.width = cw;
+        canv.height = ch;
+        canv.id = 'cv' + id;
+        return canv;
+    }
+
+    function createCanvases(img, rows, cols)
+    {
+        var canvases_conatiner = document.getElementById('canvases_conatiner');
+        for (var i = 0; i < rows; i++)
+        {
+            var row = createRow();
+            for (var j = 0; j < cols; j++)
+            {
+                var sx = j * cw;
+                var sy = sprite_start_y = i * ch;
+                var id = i * cols + j;
+                canvases.push(createCanvas(id));
+                tiles.push(new Tile(canvases[id], sx, sy));
+                tiles[id].setupCanvas();
+                row.appendChild(canvases[id]);
+            }
+            canvases_conatiner.appendChild(row)
+        }
+    }
+
+    /*********************************************************************************/
+    /* On Click                                                                         */
+    /*********************************************************************************/
+
+    function uponClickTile(canvas, evt)
+    {
+        id = Number(canvas.id.split('cv')[1]);
+        tiles[id].rotate_cc();
+    }
+
+    function addClickListener(canvas)
+    {
+        if (!canvas.addEventListener) {
+            canvas.attachEvent("onclick", 
+                function(evt) 
+                {
+                    uponClickTile(canvas, evt)
+                });
+        }
+        else {
+            canvas.addEventListener("click", 
+                function(evt) 
+                {
+                    uponClickTile(canvas, evt)
+                }
+                , false);
+        }
+    }
+
+    </script>
+    <script type="text/javascript">
+    </script>
+  </head>
+  <body onload="initGame()">
+  	<div id="canvases_conatiner">
+	</div>
+  </body>
+</html>
